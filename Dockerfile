@@ -12,19 +12,22 @@ WORKDIR /work
 RUN \
 apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 883E8688397576B6C509DF495A9A06AEF9CB8DB0 && \
 apt-get update && \
-apt-get -y install --no-install-recommends wine1.8 winetricks libpulse0 && \
-apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /var/log/*.log /var/log/apt/*.log /var/cache/debconf
+apt-get -y install --no-install-recommends wine1.8 winetricks libpulse0 inotify-tools&& \
+apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /var/log/*.log /var/log/apt/*.log /var/cache/debconf 
 
 ENV WINEPREFIX=/usr/local/dngconverter WINEARCH=win32 WINEDLLOVERRIDES=mscoree,mshtml= DISPLAY=:0.0
 
 RUN winetricks settings win7
 
 COPY dngconverter /usr/local/bin
+COPY install /usr/local/bin
+
 # download links http://supportdownloads.adobe.com/product.jsp?product=106&platform=Windows
 ENV DNGVER=10_4
-RUN wget http://download.adobe.com/pub/adobe/dng/win/DNGConverter_${DNGVER}.exe && /usr/local/bin/dngconverter -i DNGConverter_${DNGVER}.exe && rm -f DNGConverter_${DNGVER}.exe
+RUN wget http://download.adobe.com/pub/adobe/dng/win/DNGConverter_${DNGVER}.exe && /usr/local/bin/install DNGConverter_${DNGVER}.exe && rm -f DNGConverter_${DNGVER}.exe
 
 # make wine silent
 ENV WINEDEBUG -all
 
-ENTRYPOINT ["/usr/local/bin/dngconverter"]
+COPY monitor /usr/local/bin
+ENTRYPOINT ["/usr/local/bin/monitor"]

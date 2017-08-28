@@ -1,0 +1,10 @@
+#!/bin/bash
+
+inotifywait -rm /work -e close_write |
+  while read path action file; do
+    if [[ ${file,,} == *.arw ]]; then
+      echo $path$file
+      #echo "The file '$file' appeared in directory '$path' via '$action'"
+      wine "c:/Program Files/Adobe/Adobe DNG Converter.exe" -p2 $path$file
+    fi
+  done
