@@ -1,10 +1,47 @@
 #!/bin/bash
 
-inotifywait -rm /work -e close_write |
-  while read path action file; do
-    if [[ ${file,,} == *.arw ]]; then
-      echo $path$file
-      #echo "The file '$file' appeared in directory '$path' via '$action'"
-      wine "c:/Program Files/Adobe/Adobe DNG Converter.exe" -p2 $path$file
-    fi
-  done
+shopt -s globstar
+shopt -s nocaseglob
+shopt -s nocasematch
+shopt -s nullglob
+
+if [ "$DNGVER" \> "10_1" ]; then
+  # since 10.2 changed exe location
+  DNGEXE="c:/Program Files/Adobe/Adobe DNG Converter/Adobe DNG Converter.exe"
+else
+  DNGEXE="c:/Program Files/Adobe/Adobe DNG Converter.exe"
+fi
+
+#wine "$DNGEXE" -p2 /work/1.arw
+
+ls /work
+dryrun=true
+
+for x in $(pwd)/**/*.{arw,cr2}; do
+  name=$(echo "$x" | cut -f 1 -d '.')
+  echo "Processing $x"
+
+  [ -e "$name.jpg" ] && ( $dryrun && echo "Dryrun $name.jpg will be deleted" || (echo "Deleting $name.jpg" && rm $name.jpg) )
+  [ -e "$name.JPG" ] && ( $dryrun && echo "Dryrun $name.JPG will be deleted" || (echo "Deleting $name.JPG" && rm $name.JPG) )
+
+  [ -e "$name.dng" ] && echo "$name.dng exist, skipping" 
+  [ -e "$name.dng" ] || ( echo "No $name.dng found, converting"  && wine "$DNGEXE" -p2 "$x" )
+  
+  date=$(exiv2 -g Exif.Photo.DateTimeOriginal "$name.dng" | grep -o '[0-9: ]\{19\}$')
+  echo $date
+  exiv2 -M "set Exif.Image.DateTime $date" "$name.dng"
+done 
+
+ls /work
+# exiv2 -M "set Exif.Image.DateTime $(exiv2 -g Exif.Photo.DateTimeOriginal $f | grep -o '[0-9: ]\{19\}$')" $f; done
+# for x in *.CR2 ; do [ -e "${x%.CR2}.jpg" ] || echo rm "$x"; done
+#
+#inotifywait -rm /work -e close_write |
+#  while read path action file; do
+#    echo $path$file
+#    if [[ ${file,,} == *.arw ]]; then
+#      echo $path$file
+#      #echo "The file '$file' appeared in directory '$path' via '$action'"
+#      wine "$DNGEXE" -p2 $path$file
+#    fi
+#  done
